@@ -57,11 +57,12 @@ def add_sieve_test(db_conn, header_data: dict, detail_lines: list):
         db_conn.rollback(); return 0
 
 def get_sales_report_data(db_conn, start_date, end_date):
+    # Changed to INNER JOIN to only get orders with actual items.
     sql = """
         SELECT h.SalesOrderNo, h.OrderDate, c.CustomerName, h.CustomerPONo, d.ItemCode,
                d.ItemCodeDesc, d.QuantityOrdered, d.UnitPrice, d.ExtensionAmt
         FROM SalesOrderHeader AS h
-        LEFT JOIN SalesOrderDetail AS d ON h.SalesOrderNo = d.SalesOrderNo
+        INNER JOIN SalesOrderDetail AS d ON h.SalesOrderNo = d.SalesOrderNo
         LEFT JOIN Customer AS c ON h.CustomerNo = c.CustomerNo
         WHERE h.OrderDate BETWEEN ? AND ? ORDER BY h.OrderDate DESC, h.SalesOrderNo DESC;
     """
