@@ -8,6 +8,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 import io
 import csv
 from apscheduler.schedulers.background import BackgroundScheduler
+from collections import defaultdict
 
 try:
     from sqlcipher3 import dbapi2 as sqlite3
@@ -19,6 +20,16 @@ DATABASE = 'operations_dashboard.db'
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 scheduler = BackgroundScheduler()
+
+# --- Custom Jinja2 Filter ---
+def format_with_commas(value):
+    """Formats a number with commas for thousands separation."""
+    if isinstance(value, (int, float)):
+        return "{:,.2f}".format(value)
+    return value
+
+app.jinja_env.filters['commas'] = format_with_commas
+# -----------------------------
 
 def get_db_connection(password):
     if not password: raise ValueError("A database password is required.")
@@ -172,7 +183,7 @@ def new_sieve_test():
 @app.route('/sales-report', methods=['GET', 'POST'])
 def sales_report():
     if 'db_password' not in session: return redirect(url_for('login'))
-    end_date, start_date = datetime.now(), datetime.now() - timedelta(days=7)
+    end_date, start_date = datetime.now(), datetime.now() - timedelta(days=365*2) # Default to 2 years
     if request.method == 'POST':
         try:
             start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
@@ -181,7 +192,49 @@ def sales_report():
     try:
         with get_db_connection(session['db_password']) as con:
             report_data = get_sales_report_data(con, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
-        return render_template('sales_report.html', data=report_data, start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d'))
+
+        # --- Aggregation Logic ---
+        summary_by_item = defaultdict(lambda: {'revenue': 0.0, 'tons_sold': 0.0})
+        summary_by_year = defaultdict(lambda: {'revenue': 0.0, 'tons_sold': 0.0})
+
+        for row in report_data:
+            revenue = row['ExtensionAmt'] or 0.0
+            quantity = row['QuantityOrdered'] or 0.0
+
+            # By Item Summary
+            item_desc = row['ItemCodeDesc'] if (row['ItemCodeDesc'] and row['ItemCodeDesc'].strip()) else '(Not Specified)'
+            summary_by_item[item_desc]['revenue'] += revenue
+
+            # Heuristic: Exclude items that are likely not 'products' from tonnage calculation
+            # This is based on your sample output where things like Freight don't have tons.
+            excluded_keywords = ['freight', 'pallet', 'lease', 'dunnage', 'shipping', 'charge', 'fee']
+            if not any(keyword in item_desc.lower() for keyword in excluded_keywords):
+                summary_by_item[item_desc]['tons_sold'] += quantity
+
+            # By Year Summary
+            try:
+                # Assuming OrderDate is in 'YYYY-MM-DD' format
+                order_date = datetime.strptime(row['OrderDate'], '%Y-%m-%d')
+                year = order_date.year
+                summary_by_year[year]['revenue'] += revenue
+                if not any(keyword in item_desc.lower() for keyword in excluded_keywords):
+                     summary_by_year[year]['tons_sold'] += quantity
+            except (TypeError, ValueError):
+                continue # Skip if date is invalid
+
+        # Convert defaultdicts to sorted lists for predictable template rendering
+        sorted_summary_by_item = sorted(summary_by_item.items(), key=lambda item: item[1]['revenue'], reverse=True)
+        sorted_summary_by_year = sorted(summary_by_year.items(), key=lambda item: item[0])
+        # --- End Aggregation ---
+
+        return render_template(
+            'sales_report.html',
+            data=report_data,
+            summary_by_item=sorted_summary_by_item,
+            summary_by_year=sorted_summary_by_year,
+            start_date=start_date.strftime('%Y-%m-%d'),
+            end_date=end_date.strftime('%Y-%m-%d')
+        )
     except (ValueError, ConnectionError) as e:
         flash(f"Database Error: {e}. Please log in again.", 'error'); return redirect(url_for('login'))
 
