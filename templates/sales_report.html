@@ -16,6 +16,32 @@
         background-color: #e9ecef;
         border-top: 2px solid #ced4da;
     }
+    /* Style the tab */
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+        border-radius: 5px 5px 0 0;
+    }
+    .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        font-size: 17px;
+    }
+    .tab button:hover { background-color: #ddd; }
+    .tab button.active { background-color: #ccc; }
+    .tabcontent {
+        display: none;
+        padding: 20px 12px;
+        border: 1px solid #ccc;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+    }
 </style>
 {% endblock %}
 
@@ -34,8 +60,15 @@
         <button type="submit" style="margin-left: 20px;">Update Report</button>
     </form>
 
-    <!-- Summary by Item -->
-    <div class="report-section">
+    <!-- Tab links -->
+    <div class="tab">
+      <button class="tablinks active" onclick="openTab(event, 'ByItem')" id="defaultOpen">By Item</button>
+      <button class="tablinks" onclick="openTab(event, 'ByYear')">By Year</button>
+      <button class="tablinks" onclick="openTab(event, 'Detailed')">Detailed Report</button>
+    </div>
+
+    <!-- Tab content -->
+    <div id="ByItem" class="tabcontent">
         <h2>Summary by Item</h2>
         <table>
             <thead>
@@ -66,8 +99,7 @@
         </table>
     </div>
 
-    <!-- Summary by Year -->
-    <div class="report-section">
+    <div id="ByYear" class="tabcontent">
         <h2>Summary by Year</h2>
         <table>
             <thead>
@@ -98,40 +130,70 @@
         </table>
     </div>
 
-    <!-- Detailed Report -->
-    <div class="report-section">
+    <div id="Detailed" class="tabcontent">
         <h2>Detailed Report</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Order No</th>
-                    <th>Order Date</th>
-                    <th>Customer Name</th>
-                    <th>Item Code</th>
-                    <th>Description</th>
-                    <th class="num">Qty</th>
-                    <th class="num">Unit Price</th>
-                    <th class="num">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    <td>{{ row.SalesOrderNo }}</td>
-                    <td>{{ row.OrderDate }}</td>
-                    <td>{{ row.CustomerName }}</td>
-                    <td>{{ row.ItemCode or '' }}</td>
-                    <td>{{ row.ItemCodeDesc or '' }}</td>
-                    <td class="num">{{ (row.QuantityOrdered or 0.0) | commas }}</td>
-                    <td class="num">${{ (row.UnitPrice or 0.0) | commas }}</td>
-                    <td class="num">${{ (row.ExtensionAmt or 0.0) | commas }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="8" style="text-align: center;">No sales data found for the selected date range.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order No</th>
+                        <th>Order Date</th>
+                        <th>Customer Name</th>
+                        <th>Item Code</th>
+                        <th>Description</th>
+                        <th class="num">Qty Shipped</th>
+                        <th class="num">Unit Price</th>
+                        <th class="num">Total</th>
+                        <th>Bill To Name</th>
+                        <th>Ship To Name</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    <tr>
+                        <td>{{ row.SalesOrderNo }}</td>
+                        <td>{{ row.OrderDate }}</td>
+                        <td>{{ row.CustomerName }}</td>
+                        <td>{{ row.ItemCode or '' }}</td>
+                        <td>{{ row.ItemCodeDesc or '' }}</td>
+                        <td class="num">{{ (row.QuantityShipped or 0.0) | commas }}</td>
+                        <td class="num">${{ (row.UnitPrice or 0.0) | commas }}</td>
+                        <td class="num">${{ (row.ExtensionAmt or 0.0) | commas }}</td>
+                        <td>{{ row.BillToName or ''}}</td>
+                        <td>{{ row.ShipToName or ''}}</td>
+                        <td>{{ row.CommentText or ''}}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="11" style="text-align: center;">No sales data found for the selected date range.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function openTab(evt, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(tabName).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+
+// Get the element with id="defaultOpen" and click on it
+document.getElementById("defaultOpen").click();
+</script>
 {% endblock %}

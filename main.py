@@ -57,10 +57,10 @@ def add_sieve_test(db_conn, header_data: dict, detail_lines: list):
         db_conn.rollback(); return 0
 
 def get_sales_report_data(db_conn, start_date, end_date):
-    # Changed to INNER JOIN to only get orders with actual items.
+    # This query now selects all columns from the joined tables
     sql = """
-        SELECT h.SalesOrderNo, h.OrderDate, c.CustomerName, h.CustomerPONo, d.ItemCode,
-               d.ItemCodeDesc, d.QuantityOrdered, d.UnitPrice, d.ExtensionAmt
+        SELECT h.*, d.LineKey, d.ItemCode, d.ItemCodeDesc, d.QuantityOrdered, d.QuantityShipped,
+               d.UnitPrice, d.ExtensionAmt, d.CommentText, c.CustomerName
         FROM SalesOrderHeader AS h
         INNER JOIN SalesOrderDetail AS d ON h.SalesOrderNo = d.SalesOrderNo
         LEFT JOIN Customer AS c ON h.CustomerNo = c.CustomerNo
@@ -184,7 +184,8 @@ def new_sieve_test():
 @app.route('/sales-report', methods=['GET', 'POST'])
 def sales_report():
     if 'db_password' not in session: return redirect(url_for('login'))
-    end_date, start_date = datetime.now(), datetime.now() - timedelta(days=365*2) # Default to 2 years
+    # Default date range changed to 1 week
+    end_date, start_date = datetime.now(), datetime.now() - timedelta(days=7)
     if request.method == 'POST':
         try:
             start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
@@ -200,30 +201,25 @@ def sales_report():
 
         for row in report_data:
             revenue = row['ExtensionAmt'] or 0.0
-            quantity = row['QuantityOrdered'] or 0.0
+            # Use QuantityShipped for tons calculation, fall back to QuantityOrdered
+            quantity = row['QuantityShipped'] if row['QuantityShipped'] is not None else (row['QuantityOrdered'] or 0.0)
 
-            # By Item Summary
             item_desc = row['ItemCodeDesc'] if (row['ItemCodeDesc'] and row['ItemCodeDesc'].strip()) else '(Not Specified)'
             summary_by_item[item_desc]['revenue'] += revenue
 
-            # Heuristic: Exclude items that are likely not 'products' from tonnage calculation
-            # This is based on your sample output where things like Freight don't have tons.
-            excluded_keywords = ['freight', 'pallet', 'lease', 'dunnage', 'shipping', 'charge', 'fee']
+            excluded_keywords = ['freight', 'pallet', 'lease', 'dunnage', 'shipping', 'charge', 'fee', 'misc', 'covers', 'shrinkwrap']
             if not any(keyword in item_desc.lower() for keyword in excluded_keywords):
                 summary_by_item[item_desc]['tons_sold'] += quantity
 
-            # By Year Summary
             try:
-                # Assuming OrderDate is in 'YYYY-MM-DD' format
                 order_date = datetime.strptime(row['OrderDate'], '%Y-%m-%d')
                 year = order_date.year
                 summary_by_year[year]['revenue'] += revenue
                 if not any(keyword in item_desc.lower() for keyword in excluded_keywords):
                      summary_by_year[year]['tons_sold'] += quantity
             except (TypeError, ValueError):
-                continue # Skip if date is invalid
+                continue
 
-        # Convert defaultdicts to sorted lists for predictable template rendering
         sorted_summary_by_item = sorted(summary_by_item.items(), key=lambda item: item[1]['revenue'], reverse=True)
         sorted_summary_by_year = sorted(summary_by_year.items(), key=lambda item: item[0])
         # --- End Aggregation ---

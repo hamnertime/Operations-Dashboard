@@ -17,11 +17,12 @@ TABLE_MAPPINGS = [
     (
         "AR_InvoiceHistoryHeader", "SalesOrderHeader",
         {
-            # Corrected to use InvoiceNo as the source for the primary key, as it's the true key in Sage.
             "InvoiceNo": "SalesOrderNo",
-            "OrderDate": "OrderDate", "ShipToName": "ShipToName",
-            "ShipToAddress1": "ShipToAddress1", "ShipToCity": "ShipToCity", "ShipToState": "ShipToState",
-            "ShipToZipCode": "ShipToZipCode", "CustomerPONo": "CustomerPONo", "ShipVia": "ShipVia",
+            "OrderDate": "OrderDate",
+            "CustomerPONo": "CustomerPONo",
+            "ShipToName": "ShipToName", "ShipToAddress1": "ShipToAddress1", "ShipToCity": "ShipToCity", "ShipToState": "ShipToState", "ShipToZipCode": "ShipToZipCode",
+            "BillToName": "BillToName", "BillToAddress1": "BillToAddress1", "BillToCity": "BillToCity", "BillToState": "BillToState", "BillToZipCode": "BillToZipCode",
+            "ShipVia": "ShipVia",
             "CustomerNo": "CustomerNo"
         },
         "SalesOrderNo"
@@ -29,11 +30,15 @@ TABLE_MAPPINGS = [
     (
         "AR_InvoiceHistoryDetail", "SalesOrderDetail",
         {
-            # This mapping is now correct because the header sync uses InvoiceNo as the source for SalesOrderNo.
             "InvoiceNo": "SalesOrderNo",
-            "DetailSeqNo": "LineKey", "ItemCode": "ItemCode",
-            "ItemCodeDesc": "ItemCodeDesc", "QuantityOrdered": "QuantityOrdered",
-            "UnitPrice": "UnitPrice", "ExtensionAmt": "ExtensionAmt"
+            "DetailSeqNo": "LineKey",
+            "ItemCode": "ItemCode",
+            "ItemCodeDesc": "ItemCodeDesc",
+            "QuantityOrdered": "QuantityOrdered",
+            "QuantityShipped": "QuantityShipped",
+            "UnitPrice": "UnitPrice",
+            "ExtensionAmt": "ExtensionAmt",
+            "CommentText": "CommentText"
         },
         ("SalesOrderNo", "LineKey")
     ),

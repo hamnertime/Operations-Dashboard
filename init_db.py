@@ -77,13 +77,14 @@ def create_database():
                 SalesOrderNo TEXT PRIMARY KEY, OrderDate TEXT, OrderStatus TEXT, CustomerNo TEXT,
                 CustomerPONo TEXT, ShipToName TEXT, ShipToAddress1 TEXT, ShipToCity TEXT,
                 ShipToState TEXT, ShipToZipCode TEXT, ShipVia TEXT,
+                BillToName TEXT, BillToAddress1 TEXT, BillToCity TEXT, BillToState TEXT, BillToZipCode TEXT,
                 FOREIGN KEY (CustomerNo) REFERENCES Customer (CustomerNo)
             )
         """)
         cur.execute("""
             CREATE TABLE SalesOrderDetail (
                 SalesOrderNo TEXT, LineKey TEXT, ItemCode TEXT, ItemCodeDesc TEXT,
-                QuantityOrdered REAL, UnitPrice REAL, ExtensionAmt REAL,
+                QuantityOrdered REAL, QuantityShipped REAL, UnitPrice REAL, ExtensionAmt REAL, CommentText TEXT,
                 PRIMARY KEY (SalesOrderNo, LineKey),
                 FOREIGN KEY (SalesOrderNo) REFERENCES SalesOrderHeader (SalesOrderNo)
             )
