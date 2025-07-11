@@ -34,11 +34,11 @@
                 <td>{{ row.SalesOrderNo }}</td>
                 <td>{{ row.OrderDate }}</td>
                 <td>{{ row.CustomerName }}</td>
-                <td>{{ row.ItemCode }}</td>
-                <td>{{ row.ItemCodeDesc }}</td>
-                <td>{{ "%.2f"|format(row.QuantityOrdered) }}</td>
-                <td>${{ "%.2f"|format(row.UnitPrice) }}</td>
-                <td>${{ "%.2f"|format(row.ExtensionAmt) }}</td>
+                <td>{{ row.ItemCode or '' }}</td>
+                <td>{{ row.ItemCodeDesc or '' }}</td>
+                <td>{{ "%.2f"|format(row.QuantityOrdered or 0.0) }}</td>
+                <td>${{ "%.2f"|format(row.UnitPrice or 0.0) }}</td>
+                <td>${{ "%.2f"|format(row.ExtensionAmt or 0.0) }}</td>
             </tr>
             {% else %}
             <tr>

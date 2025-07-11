@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block title %}Sieve Tests{% endblock %}
+
+{% block content %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>Sieve Tests</h1>
+        <a href="{{ url_for('new_sieve_test') }}" style="padding: 8px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">New Sieve Test</a>
+    </div>
+
+    <div style="margin-bottom: 20px; background-color: #e9ecef; padding: 15px; border-radius: 5px;">
+        <form method="POST" action="{{ url_for('sieve_search') }}" style="display: flex; align-items: center; gap: 10px;">
+            <label for="id_to_search" style="font-weight: bold;">Search by Test ID:</label>
+            <input type="number" name="id_to_search" id="id_to_search" required style="padding: 8px; flex-grow: 1;">
+            <button type="submit">Search</button>
+        </form>
+    </div>
+
+    <h2>Recent Sieve Tests</h2>
+    {% if recent_tests %}
+    <table>
+        <thead>
+            <tr>
+                <th>Test ID</th>
+                <th>Product</th>
+                <th>Test Date</th>
+                <th>Car/Truck #</th>
+                <th>View</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in recent_tests %}
+            <tr>
+                <td>{{ test.SieveTestID }}</td>
+                <td>{{ test.Product }}</td>
+                <td>{{ test.SieveTestDate }}</td>
+                <td>{{ test.CarorTruckNumber }}</td>
+                <td><a href="{{ url_for('sieve_detail', test_id=test.SieveTestID) }}">View Details</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No recent sieve tests found.</p>
+    {% endif %}
+{% endblock %}
