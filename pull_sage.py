@@ -15,30 +15,31 @@ DB_FILE = "operations_dashboard.db"
 TABLE_MAPPINGS = [
     ("AR_Customer", "Customer", {"CustomerNo": "CustomerNo", "CustomerName": "CustomerName"}, "CustomerNo"),
     (
+        "CI_Item", "CI_Item",
+        {
+            "ItemCode": "ItemCode", "ProductLine": "ProductLine", "ProductType": "ProductType",
+            "SalesUnitOfMeasure": "SalesUnitOfMeasure", "PurchaseUnitOfMeasure": "PurchaseUnitOfMeasure",
+            "StandardUnitPrice": "StandardUnitPrice", "CommentText": "CommentText"
+        },
+        "ItemCode"
+    ),
+    (
         "AR_InvoiceHistoryHeader", "SalesOrderHeader",
         {
-            "InvoiceNo": "SalesOrderNo",
-            "OrderDate": "OrderDate",
-            "CustomerPONo": "CustomerPONo",
+            "InvoiceNo": "SalesOrderNo", "OrderDate": "OrderDate", "CustomerPONo": "CustomerPONo",
             "ShipToName": "ShipToName", "ShipToAddress1": "ShipToAddress1", "ShipToCity": "ShipToCity", "ShipToState": "ShipToState", "ShipToZipCode": "ShipToZipCode",
             "BillToName": "BillToName", "BillToAddress1": "BillToAddress1", "BillToCity": "BillToCity", "BillToState": "BillToState", "BillToZipCode": "BillToZipCode",
-            "ShipVia": "ShipVia",
-            "CustomerNo": "CustomerNo"
+            "ShipVia": "ShipVia", "CustomerNo": "CustomerNo"
         },
         "SalesOrderNo"
     ),
     (
         "AR_InvoiceHistoryDetail", "SalesOrderDetail",
         {
-            "InvoiceNo": "SalesOrderNo",
-            "DetailSeqNo": "LineKey",
-            "ItemCode": "ItemCode",
-            "ItemCodeDesc": "ItemCodeDesc",
-            "QuantityOrdered": "QuantityOrdered",
-            "QuantityShipped": "QuantityShipped",
-            "UnitPrice": "UnitPrice",
-            "ExtensionAmt": "ExtensionAmt",
-            "CommentText": "CommentText"
+            "InvoiceNo": "SalesOrderNo", "DetailSeqNo": "LineKey", "ItemCode": "ItemCode",
+            "ItemCodeDesc": "ItemCodeDesc", "QuantityOrdered": "QuantityOrdered",
+            "QuantityShipped": "QuantityShipped", "UnitPrice": "UnitPrice",
+            "ExtensionAmt": "ExtensionAmt", "CommentText": "CommentText"
         },
         ("SalesOrderNo", "LineKey")
     ),
@@ -56,7 +57,6 @@ def get_local_db_connection(password):
     if not password: sys.exit("FATAL: A database master password is required to connect.")
     try:
         con = sqlite3.connect(DB_FILE, timeout=10)
-        # Set row_factory here to make sure all cursor operations can access columns by name
         con.row_factory = sqlite3.Row
         cur = con.cursor()
         cur.execute(f"PRAGMA key = '{password}';")
@@ -66,7 +66,6 @@ def get_local_db_connection(password):
         sys.exit(f"FATAL: Failed to connect to local database '{DB_FILE}'. Is the password correct? Error: {e}")
 
 def get_sage_creds_and_config(local_db_con):
-    """Retrieves Sage connection details from the local database."""
     creds = {}
     try:
         cur = local_db_con.cursor()
@@ -74,13 +73,10 @@ def get_sage_creds_and_config(local_db_con):
         cred_row = cur.fetchone()
         if not cred_row: sys.exit("FATAL: Sage 100 credentials not found in the local database.")
         creds.update(dict(cred_row))
-
         cur.execute("SELECT key, value FROM config WHERE key IN ('sage_dsn', 'sage_company_code')")
         for row in cur.fetchall(): creds[row['key']] = row['value']
-
         if 'sage_dsn' not in creds or 'sage_company_code' not in creds:
             sys.exit("FATAL: Sage DSN or Company Code not found in the database config table.")
-
         return creds
     except sqlite3.Error as e:
         sys.exit(f"FATAL: Could not read credentials/config from the local database. Error: {e}")
@@ -112,16 +108,7 @@ def sync_table(sage_cursor, local_db_con, sage_table, local_table, column_map, p
         print(f"INFO: No rows found in {sage_table} to sync.")
         return True
 
-    data_to_upsert = []
-    for row in sage_rows:
-        new_row = []
-        for value in row:
-            if isinstance(value, Decimal): new_row.append(float(value))
-            elif isinstance(value, (date, datetime)): new_row.append(value.strftime('%Y-%m-%d'))
-            elif value is None: new_row.append(None)
-            else: new_row.append(str(value).strip())
-        data_to_upsert.append(tuple(new_row))
-
+    data_to_upsert = [tuple(row) for row in sage_rows]
     local_cols_str = ", ".join(column_map.values())
     placeholders = ", ".join("?" for _ in column_map.values())
     sql_upsert = f"INSERT OR REPLACE INTO {local_table} ({local_cols_str}) VALUES ({placeholders})"
@@ -141,13 +128,10 @@ def sync_table(sage_cursor, local_db_con, sage_table, local_table, column_map, p
 def main():
     print("--- Starting Sage 100 to Local DB Sync Process ---")
     start_time = datetime.now()
-
     master_password = get_db_password()
     local_conn = get_local_db_connection(master_password)
-
     sage_config = get_sage_creds_and_config(local_conn)
     sage_conn = get_sage_connection(sage_config)
-
     try:
         sage_cursor = sage_conn.cursor()
         for sage_tbl, local_tbl, col_map, pk in TABLE_MAPPINGS:
@@ -157,7 +141,6 @@ def main():
     finally:
         if local_conn: local_conn.close(); print("\nDEBUG: Local database connection closed.")
         if sage_conn: sage_conn.close(); print("DEBUG: Sage 100 connection closed.")
-
     end_time = datetime.now()
     print(f"\n--- Sync process finished in {end_time - start_time} ---")
 

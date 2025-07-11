@@ -51,26 +51,12 @@ def create_database():
 
         print("\nCreating database schema...")
 
-        # Create table to hold generic key-value config
-        cur.execute("""
-            CREATE TABLE config (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL
-            )
-        """)
-
-        # Create table to store encrypted credentials
+        cur.execute("CREATE TABLE config (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
         cur.execute("""
             CREATE TABLE credentials (
-                system TEXT PRIMARY KEY,
-                server TEXT,
-                database TEXT,
-                username TEXT,
-                password TEXT
+                system TEXT PRIMARY KEY, server TEXT, database TEXT, username TEXT, password TEXT
             )
         """)
-
-        # Create the application tables
         cur.execute("CREATE TABLE Customer (CustomerNo TEXT PRIMARY KEY, CustomerName TEXT)")
         cur.execute("""
             CREATE TABLE SalesOrderHeader (
@@ -87,6 +73,14 @@ def create_database():
                 QuantityOrdered REAL, QuantityShipped REAL, UnitPrice REAL, ExtensionAmt REAL, CommentText TEXT,
                 PRIMARY KEY (SalesOrderNo, LineKey),
                 FOREIGN KEY (SalesOrderNo) REFERENCES SalesOrderHeader (SalesOrderNo)
+            )
+        """)
+        # New table to store item master details
+        cur.execute("""
+            CREATE TABLE CI_Item (
+                ItemCode TEXT PRIMARY KEY, ProductLine TEXT, ProductType TEXT,
+                SalesUnitOfMeasure TEXT, PurchaseUnitOfMeasure TEXT,
+                StandardUnitPrice REAL, CommentText TEXT
             )
         """)
         cur.execute("CREATE TABLE Sample (SampleID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT UNIQUE NOT NULL)")
@@ -134,26 +128,8 @@ def create_database():
             ('Sync Sage 100 Data', 'pull_sage.py', 1440, 1)
         )
 
-        print("\n--- Optional Initial Data ---")
-        sieve_defaults_str = input("Enter a comma-separated list of default sieve sizes (e.g., 40,50,70,100,140,200,999): ")
-        if sieve_defaults_str:
-            try:
-                sieve_defaults = [(int(s.strip()),) for s in sieve_defaults_str.split(',') if s.strip()]
-                cur.executemany("INSERT INTO SieveDefaults (USSieve) VALUES (?)", sieve_defaults)
-                print(f"  > Added {len(sieve_defaults)} default sieve sizes.")
-            except ValueError:
-                print("  > Warning: Could not parse sieve sizes. Must be numbers. Skipping.", file=sys.stderr)
-
-        sample_products_str = input("Enter a comma-separated list of initial sample product names (e.g., Product A, Product B): ")
-        if sample_products_str:
-            sample_products = [(s.strip(),) for s in sample_products_str.split(',') if s.strip()]
-            cur.executemany("INSERT INTO Sample (Name) VALUES (?)", sample_products)
-            print(f"  > Added {len(sample_products)} sample products.")
-
-
         con.commit()
         print(f"\n✅ Success! Encrypted database '{DB_FILE}' created and configured.")
-        print("You can now run the main application.")
 
     except sqlite3.Error as e:
         print(f"\n❌ An error occurred: {e}", file=sys.stderr)
