@@ -140,3 +140,11 @@ def export_sales_report():
         return Response(output, mimetype="text/csv", headers={"Content-Disposition": f"attachment;filename=sales_report_{start}_to_{end}.csv"})
     except (ValueError, ConnectionError) as e:
         return f"Error exporting data: {e}", 500
+
+if __name__ == '__main__':
+    if not (os.path.exists('cert.pem') and os.path.exists('key.pem')):
+        sys.exit("Error: SSL certificate not found. Run 'python generate_cert.py' first.")
+    if not os.path.exists(DATABASE):
+        sys.exit(f"Error: Database '{DATABASE}' not found. Run 'python init_db.py' first.")
+    print("--- Starting Operations Dashboard Web Server ---")
+    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context=('cert.pem', 'key.pem'))
