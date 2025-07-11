@@ -20,6 +20,7 @@
         tr:nth-child(even) { background-color: #f8f9fa; }
         h1, h2 { color: #343a40; }
     </style>
+    {% block head %}{% endblock %}
 </head>
 <body>
     <nav class="navbar">
@@ -43,5 +44,6 @@
         {% endwith %}
         {% block content %}{% endblock %}
     </div>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
