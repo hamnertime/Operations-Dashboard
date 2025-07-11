@@ -240,13 +240,28 @@ def export_sales_report():
     if 'db_password' not in session: return redirect(url_for('login'))
     start, end = request.args.get('start_date'), request.args.get('end_date')
     try:
-        with get_db_connection(session['db_password']) as con: report_data = get_sales_report_data(con, start, end)
-        output, writer = io.StringIO(), csv.writer(output)
-        if report_data: writer.writerow(report_data[0].keys())
-        for row in report_data: writer.writerow(row)
+        with get_db_connection(session['db_password']) as con:
+            report_data = get_sales_report_data(con, start, end)
+
+        # Correctly initialize the StringIO object and csv.writer
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        if report_data:
+            # Write the header row from the keys of the first data row
+            writer.writerow(report_data[0].keys())
+            # Write all data rows
+            for row in report_data:
+                writer.writerow(row)
+
         output.seek(0)
-        return Response(output, mimetype="text/csv", headers={"Content-Disposition": f"attachment;filename=sales_report_{start}_to_{end}.csv"})
-    except (ValueError, ConnectionError) as e: return f"Error exporting data: {e}", 500
+        return Response(
+            output,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment;filename=sales_report_{start}_to_{end}.csv"}
+        )
+    except (ValueError, ConnectionError) as e:
+        return f"Error exporting data: {e}", 500
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
