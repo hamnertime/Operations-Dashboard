@@ -108,7 +108,19 @@ def sync_table(sage_cursor, local_db_con, sage_table, local_table, column_map, p
         print(f"INFO: No rows found in {sage_table} to sync.")
         return True
 
-    data_to_upsert = [tuple(row) for row in sage_rows]
+    # This loop converts data types from Sage into types that SQLite understands.
+    data_to_upsert = []
+    for row in sage_rows:
+        new_row = []
+        for value in row:
+            if isinstance(value, Decimal):
+                new_row.append(float(value))
+            elif isinstance(value, (date, datetime)):
+                new_row.append(value.isoformat())
+            else:
+                new_row.append(value)
+        data_to_upsert.append(tuple(new_row))
+
     local_cols_str = ", ".join(column_map.values())
     placeholders = ", ".join("?" for _ in column_map.values())
     sql_upsert = f"INSERT OR REPLACE INTO {local_table} ({local_cols_str}) VALUES ({placeholders})"
