@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block title %}Main Dashboard{% endblock %}
+
+{% block content %}
+    <h1>Main Dashboard</h1>
+    <h2>Recent Sales Orders</h2>
+    {% if recent_orders %}
+    <table>
+        <thead>
+            <tr>
+                <th>Sales Order #</th>
+                <th>Order Date</th>
+                <th>Customer Name</th>
+                <th>Customer PO</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in recent_orders %}
+            <tr>
+                <td>{{ order.SalesOrderNo }}</td>
+                <td>{{ order.OrderDate }}</td>
+                <td>{{ order.ShipToName }}</td>
+                <td>{{ order.CustomerPONo }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No recent sales orders found. Run the sync from the Settings page.</p>
+    {% endif %}
+{% endblock %}

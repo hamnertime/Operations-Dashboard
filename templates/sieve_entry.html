@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block title %}New Sieve Test{% endblock %}
+
+{% block content %}
+    <h1>New Sieve Test</h1>
+    <form method="POST" id="sieve-form" action="{{ url_for('new_sieve_test') }}" style="max-width: 800px;">
+        <fieldset style="padding: 15px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 20px;">
+            <legend>Test Details</legend>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label for="test_date">Test Date</label>
+                    <input type="date" name="test_date" id="test_date" value="{{ today_str }}" required style="width: 100%; padding: 8px; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label for="sample_id">Product / Sample</label>
+                    <select name="sample_id" id="sample_id" required style="width: 100%; padding: 8px;">
+                        <option value="">Select a sample...</option>
+                        {% for sample in samples %}<option value="{{ sample.SampleID }}">{{ sample.Name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div><label for="car_truck">Car/Truck #</label><input type="text" name="car_truck" id="car_truck" style="width: 100%; padding: 8px; box-sizing: border-box;"></div>
+                <div><label for="bol">Bill of Lading #</label><input type="text" name="bol" id="bol" style="width: 100%; padding: 8px; box-sizing: border-box;"></div>
+            </div>
+        </fieldset>
+        <fieldset style="padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
+            <legend>Sieve Weights</legend>
+            <div id="detail-lines-container"></div>
+            <button type="button" id="add-row-btn" style="margin-top: 10px;">Add Sieve Row</button>
+        </fieldset>
+        <div style="text-align: right; margin-top: 20px;">
+            <a href="{{ url_for('dashboard') }}" style="margin-right: 15px;">Cancel</a>
+            <button type="submit" style="padding: 10px 20px; font-size: 1em;">Save Sieve Test</button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('detail-lines-container');
+    const addRowBtn = document.getElementById('add-row-btn');
+    const defaultSieves = {{ default_sieves_json | safe }};
+
+    function createRow(sieveVal = '', weightVal = '') {
+        const div = document.createElement('div');
+        div.style.display = 'grid';
+        div.style.gridTemplateColumns = '1fr 1fr auto';
+        div.style.gap = '10px';
+        div.style.marginBottom = '10px';
+        div.innerHTML = `
+            <input type="number" name="sieve" value="${sieveVal}" placeholder="US Sieve" required style="padding: 8px;">
+            <input type="number" step="any" name="weight" value="${weightVal}" placeholder="Weight" required style="padding: 8px;">
+            <button type="button" class="remove-row-btn" style="padding: 5px 10px;">&times;</button>
+        `;
+        container.appendChild(div);
+    }
+
+    if (defaultSieves && defaultSieves.length > 0) {
+        defaultSieves.forEach(sieve => createRow(sieve));
+    } else {
+        createRow();
+    }
+
+    addRowBtn.addEventListener('click', () => createRow());
+    container.addEventListener('click', e => {
+        if (e.target && e.target.classList.contains('remove-row-btn')) {
+            e.target.parentElement.remove();
+        }
+    });
+});
+</script>
+{% endblock %}

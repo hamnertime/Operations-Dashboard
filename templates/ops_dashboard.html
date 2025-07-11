@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    <p>Live operational readings for this area.</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+        {% for item in data %}
+        <div class="data-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <p style="margin: 0; color: #6c757d; text-transform: capitalize;">{{ item.key.replace('_', ' ') }}</p>
+            <p style="margin: 5px 0 0; font-size: 1.75em; font-weight: 600;">
+                {# This little bit of logic formats numbers to 2 decimal places #}
+                {% if item.value is number %}
+                    {{ '%.2f'|format(item.value) }}
+                {% else %}
+                    {{ item.value }}
+                {% endif %}
+            </p>
+        </div>
+        {% else %}
+        <p>No dashboard data is currently configured for this view.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operations - {% block title %}{% endblock %}</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; color: #212529; margin: 0; padding: 0; }
+        .navbar { background-color: #343a40; padding: 10px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: white; }
+        .navbar a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 5px; transition: background-color 0.2s; }
+        .navbar a.active, .navbar a:hover { background-color: #495057; }
+        .navbar .logo { font-weight: bold; font-size: 1.2em; margin-right: 20px;}
+        .container { padding: 20px; max-width: 95%; margin: 0 auto; }
+        .flash-message { padding: 15px; margin-bottom: 20px; border-radius: 5px; border: 1px solid transparent; font-weight: 500; }
+        .flash-success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .flash-error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        table { width: 100%; border-collapse: collapse; background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size: 1em; margin-bottom: 20px; }
+        th, td { border: 1px solid #ced4da; padding: 12px 15px; text-align: left; vertical-align: middle; }
+        th { background-color: #e9ecef; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        h1, h2 { color: #343a40; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">Ops</div>
+        <a href="{{ url_for('ops_dashboard', dashboard_name='east') }}" class="{{ 'active' if active_page == 'east' else '' }}">East</a>
+        <a href="{{ url_for('ops_dashboard', dashboard_name='west_dry') }}" class="{{ 'active' if active_page == 'west_dry' else '' }}">West Dry</a>
+        <a href="{{ url_for('ops_dashboard', dashboard_name='west_wet') }}" class="{{ 'active' if active_page == 'west_wet' else '' }}">West Wet</a>
+        <a href="{{ url_for('ops_dashboard', dashboard_name='west_ball') }}" class="{{ 'active' if active_page == 'west_ball' else '' }}">West Ball</a>
+        <a href="{{ url_for('sieve_search') }}">Sieve Tests</a>
+        <a href="{{ url_for('sales_report') }}">Sales Report</a>
+        <a href="{{ url_for('settings') }}">Settings</a>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

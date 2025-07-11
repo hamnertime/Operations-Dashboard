@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}Unlock Database{% endblock %}
+{% block content %}
+<div class="login-container" style="background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; width: 100%; max-width: 400px; margin: 40px auto;">
+    <h1>Unlock Operations Database</h1>
+    <p>Please enter the master password to continue.</p>
+    <form method="POST" action="{{ url_for('login') }}">
+        <div style="margin-bottom: 20px;">
+            <label for="password" style="display: block; margin-bottom: 8px; font-weight: 600; text-align: left;">Master Password</label>
+            <input type="password" id="password" name="password" required autofocus style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #ced4da; box-sizing: border-box;">
+        </div>
+        <button type="submit" style="background-color: #007bff; color: white; padding: 12px 25px; border: none; border-radius: 5px; font-size: 1.1em; cursor: pointer; transition: background-color 0.2s; width: 100%;">Unlock</button>
+    </form>
+</div>
+{% endblock %}
