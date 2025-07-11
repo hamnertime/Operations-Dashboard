@@ -226,7 +226,11 @@ def sales_report():
 @app.route('/export/sales')
 def export_sales_report():
     if 'db_password' not in session: return redirect(url_for('login'))
-    start, end = request.args.get('start_date'), request.args.get('end_date')
+
+    report_type = request.args.get('report_type', 'detailed')
+    start = request.args.get('start_date')
+    end = request.args.get('end_date')
+
     try:
         with get_db_connection(session['db_password']) as con:
             report_data = get_sales_report_data(con, start, end)
@@ -234,17 +238,55 @@ def export_sales_report():
         output = io.StringIO()
         writer = csv.writer(output)
 
-        if report_data:
-            writer.writerow(report_data[0].keys())
+        filename = f"sales_report_{report_type}_{start}_to_{end}.csv"
+
+        if report_type == 'detailed':
+            headers = [
+                'CustomerNo', 'CustomerName', 'ShipToCity', 'ShipToState', 'ShipToZipCode', 'SalesOrderNo',
+                'CustomerPONo', 'ItemCode', 'OrderDate', 'ItemCodeDesc', 'DetailComment', 'QuantityShipped',
+                'UnitPrice', 'ExtensionAmt', 'ProductLine', 'SalesUnitOfMeasure', 'BillToName',
+                'BillToAddress1', 'BillToCity', 'BillToState', 'BillToZipCode', 'ShipToName', 'ShipToAddress1'
+            ]
+            writer.writerow(headers)
             for row in report_data:
-                writer.writerow(row)
+                writer.writerow([row.get(h) for h in headers])
+
+        elif report_type == 'item':
+            summary_by_item = defaultdict(lambda: {'revenue': 0.0, 'tons_sold': 0.0})
+            for row in report_data:
+                revenue = row['ExtensionAmt'] or 0.0
+                quantity = row['QuantityShipped'] if row['QuantityShipped'] is not None else (row['QuantityOrdered'] or 0.0)
+                item_desc = row['ItemCodeDesc'] if (row['ItemCodeDesc'] and row['ItemCodeDesc'].strip()) else '(Not Specified)'
+                summary_by_item[item_desc]['revenue'] += revenue
+                excluded_keywords = ['freight', 'pallet', 'lease', 'dunnage', 'shipping', 'charge', 'fee', 'misc', 'covers', 'shrinkwrap']
+                if not any(keyword in item_desc.lower() for keyword in excluded_keywords):
+                    summary_by_item[item_desc]['tons_sold'] += quantity
+
+            sorted_summary = sorted(summary_by_item.items(), key=lambda item: item[1]['revenue'], reverse=True)
+            writer.writerow(['Item Description', 'Tons Sold', 'Revenue'])
+            for item, values in sorted_summary:
+                writer.writerow([item, values['tons_sold'], values['revenue']])
+
+        elif report_type == 'year':
+            summary_by_year = defaultdict(lambda: {'revenue': 0.0, 'tons_sold': 0.0})
+            for row in report_data:
+                try:
+                    order_date = datetime.strptime(row['OrderDate'], '%Y-%m-%d')
+                    year = order_date.year
+                    summary_by_year[year]['revenue'] += row['ExtensionAmt'] or 0.0
+                    excluded_keywords = ['freight', 'pallet', 'lease', 'dunnage', 'shipping', 'charge', 'fee', 'misc', 'covers', 'shrinkwrap']
+                    if not any(keyword in (row['ItemCodeDesc'] or "").lower() for keyword in excluded_keywords):
+                        summary_by_year[year]['tons_sold'] += row['QuantityShipped'] if row['QuantityShipped'] is not None else (row['QuantityOrdered'] or 0.0)
+                except (TypeError, ValueError):
+                    continue
+
+            sorted_summary = sorted(summary_by_year.items())
+            writer.writerow(['Year', 'Tons Sold', 'Revenue'])
+            for year, values in sorted_summary:
+                writer.writerow([year, values['tons_sold'], values['revenue']])
 
         output.seek(0)
-        return Response(
-            output,
-            mimetype="text/csv",
-            headers={"Content-Disposition": f"attachment;filename=sales_report_{start}_to_{end}.csv"}
-        )
+        return Response(output, mimetype="text/csv", headers={"Content-Disposition": f"attachment;filename={filename}"})
     except (ValueError, ConnectionError) as e:
         return f"Error exporting data: {e}", 500
 

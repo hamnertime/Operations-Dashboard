@@ -15,14 +15,15 @@
     .tab button:hover { background-color: #ddd; }
     .tab button.active { background-color: #ccc; }
     .tabcontent { display: none; padding: 20px 12px; border: 1px solid #ccc; border-top: none; border-radius: 0 0 5px 5px; background-color: white; }
-    .tabcontent h2 { margin-top: 0; }
+    .tab-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .tab-header h2 { margin: 0; }
+    .export-btn { padding: 8px 15px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; }
 </style>
 {% endblock %}
 
 {% block content %}
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1>Sales Report</h1>
-        <a href="{{ url_for('export_sales_report', start_date=start_date, end_date=end_date) }}" style="padding: 8px 15px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Export Detailed CSV</a>
     </div>
 
     <form method="POST" action="{{ url_for('sales_report') }}" style="margin-bottom: 20px; background-color: #e9ecef; padding: 15px; border-radius: 5px;">
@@ -40,7 +41,10 @@
     </div>
 
     <div id="ByItem" class="tabcontent">
-        <h2>Summary by Item</h2>
+        <div class="tab-header">
+            <h2>Summary by Item</h2>
+            <a href="{{ url_for('export_sales_report', report_type='item', start_date=start_date, end_date=end_date) }}" class="export-btn">Export CSV</a>
+        </div>
         <table>
             <thead> <tr> <th>Item Description</th> <th class="num">Tons Sold</th> <th class="num">Revenue</th> </tr> </thead>
             <tbody>
@@ -55,7 +59,10 @@
     </div>
 
     <div id="ByYear" class="tabcontent">
-        <h2>Summary by Year</h2>
+        <div class="tab-header">
+            <h2>Summary by Year</h2>
+            <a href="{{ url_for('export_sales_report', report_type='year', start_date=start_date, end_date=end_date) }}" class="export-btn">Export CSV</a>
+        </div>
         <table>
             <thead> <tr> <th>Year</th> <th class="num">Tons Sold</th> <th class="num">Revenue</th> </tr> </thead>
             <tbody>
@@ -70,28 +77,31 @@
     </div>
 
     <div id="Detailed" class="tabcontent">
-        <h2>Detailed Report</h2>
+        <div class="tab-header">
+            <h2>Detailed Report</h2>
+            <a href="{{ url_for('export_sales_report', report_type='detailed', start_date=start_date, end_date=end_date) }}" class="export-btn">Export CSV</a>
+        </div>
         <div style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
-                        <th>Order No</th> <th>Order Date</th> <th>Customer Name</th> <th>Item Code</th> <th>Description</th>
-                        <th class="num">Qty Shipped</th> <th class="num">Unit Price</th> <th class="num">Total</th>
-                        <th>Product Line</th> <th>UoM</th> <th>Bill To Name</th> <th>Ship To Name</th> <th>Comment</th>
+                        <th>Customer No</th> <th>Customer Name</th> <th>Ship To City</th> <th>Ship To State</th>
+                        <th>Invoice No</th> <th>Customer PO</th> <th>Item Code</th> <th>Invoice Date</th>
+                        <th>Item Desc</th> <th>Comment</th> <th class="num">Qty Shipped</th> <th class="num">Unit Price</th>
+                        <th class="num">Extension Amt</th> <th>Product Line</th> <th>UoM</th> <th>Bill To Name</th> <th>Ship To Name</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in data %}
                     <tr>
-                        <td>{{ row.SalesOrderNo }}</td> <td>{{ row.OrderDate }}</td> <td>{{ row.CustomerName }}</td>
-                        <td>{{ row.ItemCode or '' }}</td> <td>{{ row.ItemCodeDesc or '' }}</td>
-                        <td class="num">{{ (row.QuantityShipped or 0.0) | commas }}</td> <td class="num">${{ (row.UnitPrice or 0.0) | commas }}</td>
-                        <td class="num">${{ (row.ExtensionAmt or 0.0) | commas }}</td> <td>{{ row.ProductLine or ''}}</td>
-                        <td>{{ row.SalesUnitOfMeasure or ''}}</td> <td>{{ row.BillToName or ''}}</td> <td>{{ row.ShipToName or ''}}</td>
-                        <td>{{ row.DetailComment or ''}}</td>
+                        <td>{{ row.CustomerNo }}</td> <td>{{ row.CustomerName }}</td> <td>{{ row.ShipToCity }}</td> <td>{{ row.ShipToState }}</td>
+                        <td>{{ row.SalesOrderNo }}</td> <td>{{ row.CustomerPONo }}</td> <td>{{ row.ItemCode }}</td> <td>{{ row.OrderDate }}</td>
+                        <td>{{ row.ItemCodeDesc }}</td> <td>{{ row.DetailComment }}</td> <td class="num">{{ (row.QuantityShipped or 0.0) | commas }}</td>
+                        <td class="num">${{ (row.UnitPrice or 0.0) | commas }}</td> <td class="num">${{ (row.ExtensionAmt or 0.0) | commas }}</td>
+                        <td>{{ row.ProductLine }}</td> <td>{{ row.SalesUnitOfMeasure }}</td> <td>{{ row.BillToName }}</td> <td>{{ row.ShipToName }}</td>
                     </tr>
                     {% else %}
-                    <tr> <td colspan="13" style="text-align: center;">No sales data found for the selected date range.</td> </tr>
+                    <tr> <td colspan="17" style="text-align: center;">No data for this period.</td> </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -112,8 +122,7 @@ function openTab(evt, tabName) {
   if (evt) { evt.currentTarget.className += " active"; }
 }
 document.addEventListener('DOMContentLoaded', function() {
-    var defaultOpenButton = document.getElementById("defaultOpen");
-    if (defaultOpenButton) { defaultOpenButton.click(); }
+    document.getElementById("defaultOpen").click();
 });
 </script>
 {% endblock %}
