@@ -249,7 +249,8 @@ def export_sales_report():
             ]
             writer.writerow(headers)
             for row in report_data:
-                writer.writerow([row.get(h) for h in headers])
+                # Corrected to access row items by key, not by .get() method
+                writer.writerow([row[h] for h in headers])
 
         elif report_type == 'item':
             summary_by_item = defaultdict(lambda: {'revenue': 0.0, 'tons_sold': 0.0})
